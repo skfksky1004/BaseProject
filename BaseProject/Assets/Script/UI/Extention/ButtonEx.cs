@@ -84,9 +84,15 @@ public class ButtonEx : MonoBehaviour
             return _buttonIcon;
         }
     }
+    
+    public bool Interactable => Button.interactable;
 
     #region TEXT
     
+    /// <summary>
+    /// 내용 셋팅
+    /// </summary>
+    /// <param name="str"></param>
     public void SetText(string str)
     {
         if (_buttonText != null)
@@ -95,6 +101,10 @@ public class ButtonEx : MonoBehaviour
         }
     }
     
+    /// <summary>
+    ///   내용의 컬러 셋팅(헥사코드)
+    /// </summary>
+    /// <param name="hexColor"></param>
     public void SetTextColor(string hexColor)
     {
         if (_buttonText != null)
@@ -106,7 +116,10 @@ public class ButtonEx : MonoBehaviour
         }
     }
     
-    
+    /// <summary>
+    ///   내용의 컬러 셋팅(컬러값)
+    /// </summary>
+    /// <param name="color"></param>
     public void SetTextColor(Color color)
     {
         if (_buttonText != null)
@@ -119,6 +132,10 @@ public class ButtonEx : MonoBehaviour
 
     #region BG
 
+    /// <summary>
+    /// 버튼 자체 이미지 셋팅
+    /// </summary>
+    /// <param name="spr"></param>
     public void SetButtonBG(Sprite spr)
     {
         if (_buttonBg != null)
@@ -127,6 +144,10 @@ public class ButtonEx : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 버튼 자체 이미지의 컬러값 셋팅(컬러값)
+    /// </summary>
+    /// <param name="color"></param>
     private void SetButtonBGColor(Color color)
     {
         if (_buttonBg != null)
@@ -135,6 +156,10 @@ public class ButtonEx : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 버튼의 자체 이미지 컬러값 셋팅(헥사코드)
+    /// </summary>
+    /// <param name="hexColor"></param>
     private void SetButtonBGColor(string hexColor)
     {
         if (_buttonBg != null)
