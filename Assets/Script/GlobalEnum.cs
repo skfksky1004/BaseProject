@@ -22,4 +22,16 @@ namespace GlobalDefine
     {
         
     }
+    
+    public static class Enum_Game
+    {
+        public enum PlayerStatus
+        {
+            Wait,
+            Move_Left,
+            Move_Right,
+            Jump_Step_1,
+            Jump_Step_2,
+        }
+    }
 }
