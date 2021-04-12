@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using Google.Apis.Auth.OAuth2;
@@ -24,6 +26,8 @@ using Debug = UnityEngine.Debug;
 
 public static class TablePatch
 {
+    private const string ResourcesPath = "Tables";
+    
     private const string ClientId = "866924294334-je66mpa04e5qakub033atq36dsraobq9.apps.googleusercontent.com";
     private const string ClientSecret = "87Cb_mLZ5Nbuzy95XlNgwSKn";
     private const string ClientName = "BaseProject";
@@ -37,7 +41,7 @@ public static class TablePatch
     [MenuItem("Util/Table/Patch")]
     public static void PatchTable()
     {
-        
+        CreateSheetSet();
     }
 
     private static void CreateSheetSet()
@@ -76,9 +80,10 @@ public static class TablePatch
         try
         {
             var request = service.Spreadsheets.Values.Get(tableKey, sheetName);
+            //  API 호출로 받아온 IList 데이터
             var jsonObject = request.Execute().Values;
-
-            string jsonString = ParseSheetData(jsonObject);
+            //  IList 데이터를 jsonConvert 하기위해 직렬화
+            string jsonString = ParseSheetData(sheetName, jsonObject);
 
             result = SpreadSheetToDataTable(jsonString);
         }
@@ -98,7 +103,7 @@ public static class TablePatch
         {
             result.TableName = sheetName;
 
-            // SaveDataToFile(result);
+            SaveDataToFile(sheetName, result);
         }
 
         return result;
@@ -110,37 +115,95 @@ public static class TablePatch
         return data;
     }
 
-    private static string ParseSheetData(IList<IList<object>> value)
+    private static string ParseSheetData(string sheetName,IList<IList<object>> value)
     {
         StringBuilder jsonBuilder = new StringBuilder();
-        IList<object> columns = value[0];
-
-        jsonBuilder.Append("[");
-        for (int row = 1; row < value.Count; row++)
+        jsonBuilder.Append($"{{\"{sheetName}\":[");
+        
+        if (value.Count > 0)
         {
-            var data = value[row];
-            jsonBuilder.Append("{");
-            for (int col = 0; col < data.Count; col++)
+            List<string> headers = value[0].Select(x => x.ToString()).ToList();    //  헤더
+            List<bool> canRows = new List<bool>();                                        //  값 사용 유무
+            foreach (var t in headers)
             {
-                jsonBuilder.Append("\"" + columns[col] + "\"" + ":");
-                jsonBuilder.Append("\"" + data[col] + "\"");
+                //  공백이거나 앞에 #이붙으면 해당 셀 무시
+                canRows.Add(string.IsNullOrEmpty(t)== false && t.StartsWith("#") == false);
+            }
+            
+            for (int row = 1; row < value.Count; row++)
+            {
+                var columns = value[row];
+                
+                jsonBuilder.Append("{");
+                for (int col = 0; col < columns.Count; col++)
+                {
+                    if(canRows[col] == false || columns[col].Equals(string.Empty))
+                        continue;
+                    
+                    jsonBuilder.Append("\"" + headers[col] + "\"" + ":");
+                    jsonBuilder.Append("\"" + columns[col] + "\"");
+                    jsonBuilder.Append(",");
+                }
+
+                jsonBuilder.Append("}");
                 jsonBuilder.Append(",");
             }
-
-            jsonBuilder.Append("}");
-            if (row != value.Count - 1)
-                jsonBuilder.Append(",");
         }
 
-        jsonBuilder.Append("]");
+        jsonBuilder.Append("]}");
         return jsonBuilder.ToString();
     }
 
-    private static void SaveDataToFile(DataTable newTable)
+    private static void SaveDataToFile(string sheetName, DataTable newTable)
     {
-        string TablePath = string.Concat(Application.dataPath + "/Resources/TableData/" + newTable.TableName + ".json");
-        FileInfo info = new FileInfo(TablePath);
+        // //  로컬 경로
+        // string TablePath = string.Concat(Application.dataPath + "/Resources/TableData/" + newTable.TableName + ".json");
+        // FileInfo info = new FileInfo(TablePath);
+        //
+        // //  동일 파일 유무 체크
+        // if (info.Exists)
+        // {
+        //     DataTable checkTable = TableUtility.GetDataTable(info);
+        //     if (BinaryCheck(newTable, checkTable))
+        //     {
+        //         return;
+        //     }
+        // }
+
+        var rootPath = Path.Combine(Application.dataPath, "Resources", ResourcesPath);
+        Directory.CreateDirectory(rootPath);
         
-        ///  DataUtil 만들 차례
+        //  json파일 저장
+        string value = JsonConvert.SerializeObject(newTable);
+        string filePath = Path.Combine(rootPath, $"{sheetName}.json");
+        File.WriteAllText(filePath,value);
+    }
+
+    private static bool BinaryCheck<T>(T src, T Target)
+    {
+        //  두 대상을 바이너리로 변환해서 비교, 다르면 false 반환
+        BinaryFormatter formatter1 = new BinaryFormatter();
+        MemoryStream stream1 = new MemoryStream();
+        formatter1.Serialize(stream1, src);
+
+        BinaryFormatter formatter2 = new BinaryFormatter();
+        MemoryStream stream2 = new MemoryStream();
+        formatter2.Serialize(stream2, Target);
+
+        byte[] srcByte = stream1.ToArray();
+        byte[] tarByte = stream2.ToArray();
+
+        if (srcByte.Length < tarByte.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < srcByte.Length; i++)
+        {
+            if (srcByte[i] != tarByte[i])
+                return false;
+        }
+
+        return true;
     }
 }
