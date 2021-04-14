@@ -46,9 +46,11 @@ public static class TablePatch
 
     private static void CreateSheetSet()
     {
-        var pass  = new ClientSecrets();
-        pass.ClientId = ClientId;
-        pass.ClientSecret = ClientSecret;
+        var pass = new ClientSecrets
+        {
+            ClientId = ClientId, 
+            ClientSecret = ClientSecret
+        };
 
         var scopes = new string[] {SheetsService.Scope.SpreadsheetsReadonly};
         var credential = GoogleWebAuthorizationBroker.AuthorizeAsync(pass, scopes, ClientName, CancellationToken.None)
@@ -67,16 +69,14 @@ public static class TablePatch
             foreach (var s in request.Sheets)
             {
                 //service, tableKey, s.Properties.Title
-                DataTable table = SendRequest(service, t,s.Properties.Title);
+                SendRequest(service, t,s.Properties.Title);
             }
         }
     }
 
-    private static DataTable SendRequest(SheetsService service,string tableKey, string sheetName)
+    private static void SendRequest(SheetsService service,string tableKey, string sheetName)
     {
-        DataTable result = null;
         bool success = true;
-
         try
         {
             var request = service.Spreadsheets.Values.Get(tableKey, sheetName);
@@ -85,28 +85,15 @@ public static class TablePatch
             //  IList 데이터를 jsonConvert 하기위해 직렬화
             string jsonString = ParseSheetData(sheetName, jsonObject);
 
-            result = SpreadSheetToDataTable(jsonString);
+            SaveDataToFile(sheetName, jsonString);
         }
         catch (Exception e)
         {
-            // success = false;
-            // Debug.LogError(e);
-            // string path = $"JsonData/{sheetName}";
-            //
-            // result = DataUtil.GetDataTable(path, sheetName);
-            // Debug.Log("시트 로드 실패로 로컬 " + sheetName + " json 데이터 불러옴");
-            
             Debug.LogError($"Json 로드 실패 : {e.Message}");
+            return;
         }
-
-        if (result != null)
-        {
-            result.TableName = sheetName;
-
-            SaveDataToFile(sheetName, result);
-        }
-
-        return result;
+        
+        Debug.Log($"Json Save Success : {sheetName}");
     }
 
     private static DataTable SpreadSheetToDataTable(string json)
@@ -130,6 +117,7 @@ public static class TablePatch
                 canRows.Add(string.IsNullOrEmpty(t)== false && t.StartsWith("#") == false);
             }
             
+            //  헤더를 제외한 1번 행부터 진행
             for (int row = 1; row < value.Count; row++)
             {
                 var columns = value[row];
@@ -154,56 +142,14 @@ public static class TablePatch
         return jsonBuilder.ToString();
     }
 
-    private static void SaveDataToFile(string sheetName, DataTable newTable)
+    //  Json 문자열을 파일로 저장
+    private static void SaveDataToFile(string sheetName, string newJson)
     {
-        // //  로컬 경로
-        // string TablePath = string.Concat(Application.dataPath + "/Resources/TableData/" + newTable.TableName + ".json");
-        // FileInfo info = new FileInfo(TablePath);
-        //
-        // //  동일 파일 유무 체크
-        // if (info.Exists)
-        // {
-        //     DataTable checkTable = TableUtility.GetDataTable(info);
-        //     if (BinaryCheck(newTable, checkTable))
-        //     {
-        //         return;
-        //     }
-        // }
-
         var rootPath = Path.Combine(Application.dataPath, "Resources", ResourcesPath);
         Directory.CreateDirectory(rootPath);
         
         //  json파일 저장
-        string value = JsonConvert.SerializeObject(newTable);
         string filePath = Path.Combine(rootPath, $"{sheetName}.json");
-        File.WriteAllText(filePath,value);
-    }
-
-    private static bool BinaryCheck<T>(T src, T Target)
-    {
-        //  두 대상을 바이너리로 변환해서 비교, 다르면 false 반환
-        BinaryFormatter formatter1 = new BinaryFormatter();
-        MemoryStream stream1 = new MemoryStream();
-        formatter1.Serialize(stream1, src);
-
-        BinaryFormatter formatter2 = new BinaryFormatter();
-        MemoryStream stream2 = new MemoryStream();
-        formatter2.Serialize(stream2, Target);
-
-        byte[] srcByte = stream1.ToArray();
-        byte[] tarByte = stream2.ToArray();
-
-        if (srcByte.Length < tarByte.Length)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < srcByte.Length; i++)
-        {
-            if (srcByte[i] != tarByte[i])
-                return false;
-        }
-
-        return true;
+        File.WriteAllText(filePath,newJson);
     }
 }

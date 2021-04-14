@@ -22,7 +22,6 @@ public class GameSystem : MonoSingleton<GameSystem>
         isLoad = Initialize();
         yield return new WaitUntil(()=>isLoad);
         
-        
         isLoad = UIManager.I.Initialize();
         UIManager.I.SetParent(transform);
         yield return new WaitUntil(()=>isLoad);
