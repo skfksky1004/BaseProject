@@ -66,9 +66,7 @@ public class GridManager : MonoBehaviour
             if (x == _columns - 1)
                 return 8;
         }
-        else
-        {
-            return 4;
-        }
+        
+        return 4;
     }
 }
