@@ -11,8 +11,8 @@ public class BossHpUI : MonoBehaviour
     private Queue<ProgressUI> _queue = new Queue<ProgressUI>();
 
     private int _destHp;   //  목표 체력
-    private int _curHp;    //  현재 체력
-    private int _maxHp;    //  맥스 체력
+    [SerializeField] private int _curHp;    //  현재 체력
+    [SerializeField] private int _maxHp;    //  맥스 체력
     
     private int _curLineCount;    //  현재 체력의 남은 라인 갯수
     
@@ -29,11 +29,13 @@ public class BossHpUI : MonoBehaviour
         //  뷰를 큐에 적립;
         foreach (var bar in _listBars)
         {
-            _queue.Enqueue(bar);
+            bar.gameObject.SetActive(true);
             bar.InitProgress();
+            
+            _queue.Enqueue(bar);
         }
 
-        _mainBar = _queue.Dequeue();
+        SetMainBar();
     }
 
     public void AddDamage(int damage)
@@ -59,45 +61,91 @@ public class BossHpUI : MonoBehaviour
             //  2. 남은 값이 한라인의 값보다 많으면 한라인을 통으로 깍는다.
             //  3. 남아있는 값이 한라인의 값보다 작으면 서서히 깍는다.
 
-            var mainValue = _mainBar.NormalValue;    //  0.1f;
+            var mainValue = _mainBar.NormalValue; //  0.1f;
             if (mainValue < remainPer)
             {
                 _mainBar.ChangeBar_Sub(mainValue);
+                
                 remainPer -= mainValue;
-                yield return new WaitUntil(() => _mainBar.IsContinue);
+                _curLineCount -= 1;
+                
+                yield return new WaitUntil(() => !_mainBar.IsContinue);
             }
-            else if(remainPer > 1)
+            else if (remainPer > 1)
             {
                 _mainBar.ChangeBar_Sub(1);
+                
                 remainPer -= 1;
-                yield return new WaitUntil(() => _mainBar.IsContinue);
+                _curLineCount -= 1;
+                
+                yield return new WaitUntil(() => !_mainBar.IsContinue);
             }
             else
             {
                 _mainBar.ChangeBar_Sub(remainPer);
                 remainPer -= remainPer;
                 yield return new WaitUntil(() => _mainBar.IsContinue);
-                
-                yield break;
             }
 
             ChangeBar();
+            
         }
+        
+        UpdateHp();
     }
 
+    private void UpdateHp()
+    {
+        _curHp = _destHp;
+    }
+    
     private void ChangeBar()
     {
-        if (_mainBar.NormalValue == 0 && 
-            _mainBar.FollowValue == 0)
+        if (_mainBar.NormalValue <= 0 && 
+            _mainBar.FollowValue <= 0)
         {
-            _queue.Enqueue(_mainBar);
+            SetRemainBar();
 
-            _mainBar = _queue.Dequeue();
-            _mainBar.InitProgress(true, _curLineCount > 1);
-            _mainBar.transform.SetAsFirstSibling();
+            SetMainBar();
         }
     }
 
+    private void SetMainBar()
+    {
+        if (_curHp <= 0)
+        {
+            _mainBar.StopAllCoroutines();
+            _mainBar.gameObject.SetActive(false);
+            return;
+        }
+        
+        _mainBar = null;
+        _mainBar = _queue.Dequeue();
+        _mainBar.InitProgress(true, _curLineCount > 1);
+        _mainBar.transform.SetAsLastSibling();
+
+        if (_curLineCount < 1)
+        {
+            foreach (var bar in _listBars)
+            {
+                if (_mainBar != bar)
+                {
+                    bar.StopAllCoroutines();
+                    bar.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+
+    private void SetRemainBar()
+    {
+        _mainBar.transform.SetAsFirstSibling();
+        _mainBar.InitProgress();
+        _queue.Enqueue(_mainBar);
+    }
+
+    public int Damage = 2000;
+    
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Q))
@@ -106,7 +154,7 @@ public class BossHpUI : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.W))
         {
-            AddDamage(1500);
+            AddDamage(Damage);
         }
         
     }

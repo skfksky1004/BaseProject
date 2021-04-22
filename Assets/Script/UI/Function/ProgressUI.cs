@@ -18,9 +18,9 @@ public class ProgressUI : MonoBehaviour
     [SerializeField] private Image _imgFollow;
     [SerializeField] private Image _imgNormal;
 
-    private float _normalValue = 1;
-    private float _followValue = 1;
-    private float _changeValue = 0;
+    public float _normalValue = 1;
+    public float _followValue = 1;
+    public float _changeValue = 0;
 
     private bool _bContunue;
     private float _delayTime = 0.01f;
@@ -37,6 +37,8 @@ public class ProgressUI : MonoBehaviour
 
     public void InitProgress(bool isMax = true, bool isFollow = true)
     {
+        _imgBackground.gameObject.SetActive( false);
+        
         _normalValue = isMax ? 1 : 0;
         _followValue = isMax ? 1 : 0;
 
@@ -56,7 +58,7 @@ public class ProgressUI : MonoBehaviour
         _changeValue = value;
 
         //  값이 1이상이면 follow 속도록 증가
-        _delayTime = value >= 1 ? 0.01f : 0.2f;
+        _delayTime = value >= 1f ? 0.1f : 0.02f ;
         
         ProgressStart();
     }
@@ -75,6 +77,9 @@ public class ProgressUI : MonoBehaviour
 
     private void ProgressStart()
     {
+        if(isActiveAndEnabled == false)
+            return;
+        
         StopAllCoroutines();
         StartCoroutine(Progress());
     }
@@ -105,7 +110,7 @@ public class ProgressUI : MonoBehaviour
                     if (_normalValue < _followValue && _normalValue >= 0)
                         _followValue -= (_delayTime);
 
-                    yield return new WaitForEndOfFrame();
+                    yield return new WaitForSeconds(Time.deltaTime);
 
                     break;
                 }
