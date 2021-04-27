@@ -69,7 +69,7 @@ public class BossHpUI : MonoBehaviour
                 remainPer -= mainValue;
                 _curLineCount -= 1;
                 
-                yield return new WaitUntil(() => !_mainBar.IsContinue);
+                yield return new WaitUntil(() => _mainBar.IsContinue);
             }
             else if (remainPer > 1)
             {
@@ -78,12 +78,18 @@ public class BossHpUI : MonoBehaviour
                 remainPer -= 1;
                 _curLineCount -= 1;
                 
-                yield return new WaitUntil(() => !_mainBar.IsContinue);
+                yield return new WaitUntil(() => _mainBar.IsContinue);
             }
+            // else if(_curLineCount <= 1)
+            // {
+            //     _mainBar.ChangeBar_Sub(remainPer);
+            //     remainPer -= _mainBar._followValue;
+            //     yield return new WaitUntil(() => !_mainBar.IsContinue);
+            // }
             else
             {
                 _mainBar.ChangeBar_Sub(remainPer);
-                remainPer -= remainPer;
+                remainPer = _mainBar._followValue;
                 yield return new WaitUntil(() => _mainBar.IsContinue);
             }
 
