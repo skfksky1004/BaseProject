@@ -7,10 +7,11 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 public static class CreateScript
 {
-    [MenuItem("GameObject/CreateScript", false, 1)]
+    [MenuItem("GameObject/ScriptUI/Create_Script", false, 2)]
     private static void Create_Script()
     {
         var go = Selection.activeGameObject;
@@ -29,23 +30,27 @@ public static class CreateScript
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using UnityEngine;");
         sb.AppendLine("using UnityEngine.UI;");
+        sb.AppendLine("using TMPro;");
         sb.AppendLine(string.Empty);
 
         sb.AppendLine($"public class {scriptName} : MonoBehaviour");
         sb.AppendLine("{");
 
         // TODO : 자식들이 안찾아진다.
-        var listChilds = Selection.activeGameObject.GetComponentsInChildren<GameObject>();
-        foreach (var go in listChilds)
+        var selectGo = Selection.activeGameObject;
+        var listChilds = selectGo.GetComponentsInChildren<ScriptComponent>();
+        foreach (var obj in listChilds)
         {
-            if (CheckComponent<TextMeshProUGUI>(go) != null)
+            if (CheckComponent<TextMeshProUGUI>(obj.gameObject) is TextMeshProUGUI txt)
             {
-                sb.AppendLine($"\tprivate {nameof(TextMeshProUGUI)} _{go.name}");
+                var name = txt.name.Replace("(TMP)",string.Empty);
+                sb.AppendLine($"\tprivate {nameof(TextMeshProUGUI)} _{name};");
             }
 
-            if (CheckComponent<Image>(go) != null)
+            if (CheckComponent<Image>(obj.gameObject) is Image img)
             {
-                sb.AppendLine($"\tprivate {nameof(Image)} _{go.name}");
+                var name = img.name;
+                sb.AppendLine($"\tprivate {nameof(Image)} _{name};");
             }
         }
         
@@ -56,8 +61,8 @@ public static class CreateScript
 
     private static object CheckComponent<T>(GameObject go)
     {
-        if (go.GetComponent<T>() is T text)
-            return text;
+        if (go.GetComponent<T>() is T component)
+            return component;
 
         return null;
     }
