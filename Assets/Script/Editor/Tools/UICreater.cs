@@ -29,17 +29,7 @@ public class UICreater : ScriptableWizard
     private static float _widthMin = 800f;
     private static float _heightMin = 400f;
 
-    private void OnDestroy()
-    {
-        //  프리팹 위치 저장
-        PlayerPrefs.SetString(_savePath_PrefabKey, _savePath_Prefabs);
-
-        //  스크립트 위치 저장
-        PlayerPrefs.SetString(_savePath_ScriptKey, _savePath_Scripts);
-    }
-
-    [MenuItem("Util/UI/UICreateWindow")]
-    private static void OpenWindow()
+    private static void EditorInit()
     {
         //  프리팹 저장 위치
         if (PlayerPrefs.HasKey(_savePath_PrefabKey))
@@ -60,6 +50,21 @@ public class UICreater : ScriptableWizard
                 _savePath_Scripts = Path.Combine(Application.dataPath, "Script", "UI");
             }
         }
+    }
+
+    private void OnDestroy()
+    {
+        //  프리팹 위치 저장
+        PlayerPrefs.SetString(_savePath_PrefabKey, _savePath_Prefabs);
+
+        //  스크립트 위치 저장
+        PlayerPrefs.SetString(_savePath_ScriptKey, _savePath_Scripts);
+    }
+
+    [MenuItem("Util/UI/UICreateWindow")]
+    private static void OpenWindow()
+    {
+        EditorInit();
 
         //  윈도우
         // var window = GetWindow<UICreater>();
@@ -87,31 +92,29 @@ public class UICreater : ScriptableWizard
     private static void View_SavePrefabs()
     {
         var xFix = 30;
-        var titleSize = new[] {GUILayout.Width(80), GUILayout.Height(xFix)};
-        var contentSize = new[] {GUILayout.Height(xFix)};
-        var buttonSize = new[] {GUILayout.Width(80), GUILayout.Height(xFix)};
-        var style = new GUIStyle
-        {
-            alignment = TextAnchor.MiddleLeft, 
-            border = new RectOffset(2, 2, 2, 2)
-        };
+        var titleSize = EditorHelper.GuiOption(80, xFix);
+        var contentSize = EditorHelper.GuiOption_height(xFix);
+        var buttonSize = EditorHelper.GuiOption(80, xFix);
+
 
         GUILayout.BeginHorizontal();
         {
             //  항목 이름
-            GUILayout.Label("프리팹 저장", style, titleSize);
-
+            GUILayout.Label("프리팹 저장", EditorHelper.LabelStyle, titleSize);
+            
             //  설정된 주소
-            GUILayout.Label(_savePath_Prefabs, style, contentSize);
+            GUILayout.Label(_savePath_Prefabs, EditorHelper.LabelStyle, contentSize);
 
             //  버튼    
-            var isClick = GUILayout.Button("변경", buttonSize);
+            var isClick = GUILayout.Button("변경", EditorHelper.ButtonStyle, buttonSize);
             if (isClick)
             {
                 OpenExplorer(eSaveType.Prefabs);
             }
         }
         GUILayout.EndHorizontal();
+
+        EditorHelper.GuiLine(Color.gray);
     }
 
     /// <summary>
@@ -120,30 +123,28 @@ public class UICreater : ScriptableWizard
     private static void View_SaveScript()
     {
         var xFix = 30;
-        var titleSize = new[] {GUILayout.Width(80), GUILayout.Height(xFix)};
-        var contentSize = new[] {GUILayout.Height(xFix)};
-        var buttonSize = new[] {GUILayout.Width(80), GUILayout.Height(xFix)};
-        var style = new GUIStyle();
-        style.active.textColor = Color.white;
-        style.alignment = TextAnchor.MiddleLeft;
-        
+        var titleSize = EditorHelper.GuiOption(80, xFix);
+        var contentSize = EditorHelper.GuiOption_height(xFix);
+        var buttonSize = EditorHelper.GuiOption(80, xFix);
 
         GUILayout.BeginHorizontal();
         {
             //  항목 이름
-            GUILayout.Label("스크립트 저장", style, titleSize);
-
+            EditorGUILayout.LabelField("스크립트 저장", EditorHelper.LabelStyle, titleSize);
+            
             //  설정된 주소
-            GUILayout.Label(_savePath_Scripts, style, contentSize);
+            EditorGUILayout.LabelField(_savePath_Scripts, EditorHelper.LabelStyle, contentSize);
 
             //  버튼    
-            var isClick = GUILayout.Button("변경", buttonSize);
+            var isClick = GUILayout.Button("변경", EditorHelper.ButtonStyle, buttonSize);
             if (isClick)
             {
                 OpenExplorer(eSaveType.Scripts);
             }
         }
         GUILayout.EndHorizontal();
+
+        EditorHelper.GuiLine(Color.gray);
     }
 
     /// <summary>
