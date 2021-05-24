@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 /// <summary>
@@ -18,8 +19,11 @@ public class UICreater : ScriptableWizard
     }
 
     private static UICreater _window;
-    private static string aaa;
-
+    
+    private static TreeViewState _TreeViewState;
+    private static TreeView_Simple _treeViewSimple;
+    private static SearchField _SearchField;
+    
     private static string _savePath_PrefabKey = "SaveKeyPrefabs";
     private static string _savePath_Prefabs;
     private static string _savePath_ScriptKey = "SaveKeyScript";
@@ -50,6 +54,26 @@ public class UICreater : ScriptableWizard
                 _savePath_Scripts = Path.Combine(Application.dataPath, "Script", "UI");
             }
         }
+
+
+        //  트리뷰
+        {
+            if (_TreeViewState == null)
+                _TreeViewState = new TreeViewState();
+
+            if (_SearchField == null)
+                _SearchField = new SearchField();
+                
+            _treeViewSimple = new TreeView_Simple(_TreeViewState);
+            _SearchField.downOrUpArrowKeyPressed += _treeViewSimple.SetFocusAndEnsureSelectedItem;
+            
+            TreeView_Simple.AddTreeViewItem("name1", 1);
+            TreeView_Simple.AddTreeViewItem("name2", 1);
+            TreeView_Simple.AddTreeViewItem("name3", 2);
+            TreeView_Simple.AddTreeViewItem("name4", 3);
+
+        }
+
     }
 
     private void OnDestroy()
@@ -100,7 +124,7 @@ public class UICreater : ScriptableWizard
         GUILayout.BeginHorizontal();
         {
             //  항목 이름
-            GUILayout.Label("프리팹 저장", EditorHelper.LabelStyle, titleSize);
+            GUILayout.Label("Prefabs 저장", EditorHelper.LabelStyle, titleSize);
             
             //  설정된 주소
             GUILayout.Label(_savePath_Prefabs, EditorHelper.LabelStyle, contentSize);
@@ -130,7 +154,7 @@ public class UICreater : ScriptableWizard
         GUILayout.BeginHorizontal();
         {
             //  항목 이름
-            EditorGUILayout.LabelField("스크립트 저장", EditorHelper.LabelStyle, titleSize);
+            EditorGUILayout.LabelField("Script 저장", EditorHelper.LabelStyle, titleSize);
             
             //  설정된 주소
             EditorGUILayout.LabelField(_savePath_Scripts, EditorHelper.LabelStyle, contentSize);
@@ -159,7 +183,16 @@ public class UICreater : ScriptableWizard
             //  세로_1
             GUILayout.BeginVertical();
             {
-                EditorGUILayout.LabelField("가로 1");
+                GUILayout.BeginHorizontal (EditorStyles.toolbar);
+                {
+                    GUILayout.Space (100);
+                    GUILayout.FlexibleSpace();
+                    _treeViewSimple.searchString = _SearchField.OnToolbarGUI (_treeViewSimple.searchString);
+                }
+                GUILayout.EndHorizontal();
+                
+                Rect rect = GUILayoutUtility.GetRect(200,400);
+                _treeViewSimple.OnGUI(rect);
             }
             GUILayout.EndVertical();
 
