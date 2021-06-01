@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
@@ -10,8 +12,23 @@ using UnityEngine;
 
 public class TreeView_Simple : TreeView
 {
+    public enum ContextID
+    {
+        Create,
+        AddChild,
+        Delete,
+        DeleteAll,
+        InScript,
+        
+        Max
+    };
+
     private static TreeViewItem root = new TreeViewItem() {id = 0, depth = -1, displayName = "Root"};
     private static List<TreeViewItem> items = new List<TreeViewItem>();
+    
+    public bool IsSelection() => HasSelection();
+
+    private int _accCount = 0; 
     
     public TreeView_Simple(TreeViewState state) : base(state)
     {
@@ -47,5 +64,86 @@ public class TreeView_Simple : TreeView
     {
         int delIndex = items.FindIndex(x => x.id == id);
         items.RemoveAt(delIndex);
+    }
+    
+    public void OnTreeView_Func()
+    {
+        GenericMenu menu = new GenericMenu();
+
+        if (IsSelection())
+        {
+            menu.AddItem(new GUIContent(ContextID.AddChild.ToString()), false, OnContextCallback, ContextID.AddChild);
+            menu.AddItem(new GUIContent(ContextID.Delete.ToString()), false, OnContextCallback, ContextID.Delete);
+            menu.AddItem(new GUIContent(ContextID.InScript.ToString()), false, OnContextCallback, ContextID.InScript);
+        }
+        else
+        {
+            menu.AddItem(new GUIContent(ContextID.Create.ToString()), false, OnContextCallback, ContextID.Create);
+            menu.AddItem(new GUIContent(ContextID.DeleteAll.ToString()), false, OnContextCallback, ContextID.DeleteAll);
+        }
+        
+        menu.ShowAsContext();
+    }
+
+    private void OnContextCallback(object obj)
+    {
+        var contextId = (ContextID) obj;
+        switch (contextId)
+        {
+            case ContextID.Create:     //  뎁스 0 생성
+            {
+                AddTreeViewItem($"Test{++_accCount}", 0);
+                break;
+            }
+            case ContextID.AddChild:    //  하위에 추가
+            {
+                TreeViewItem parentItem = null;
+                for (int i = 0; i < items.Count; i++)
+                {
+                    if (IsSelected(items[i].id))
+                    {
+                        parentItem = items[i];
+                    }
+                }
+
+                if (parentItem != null)
+                {
+                    AddTreeViewItem($"Test{++_accCount}", parentItem.depth + 1);
+                }
+                
+                break;
+            }
+            case ContextID.Delete:    //  개별 삭제
+            case ContextID.DeleteAll: //  전체 삭제
+            {
+                List<int> arrID = new List<int>();
+                for (int i = 0; i < items.Count; i++)
+                {
+                    if ((contextId == ContextID.Delete && IsSelected(items[i].id)) ||
+                         contextId == ContextID.DeleteAll)
+                    {
+                        arrID.Add(items[i].id);
+                    }
+                }
+
+                foreach (var id in arrID)
+                {
+                    DelTreaVieItem(id);
+                }
+                
+                break;
+            }
+            case ContextID.InScript:    //  스크립트에 추가(작업 예정)
+            {
+                //  
+                break;
+            }
+            default:
+                break;
+        }
+
+        BuildRoot();
+        
+        Reload();
     }
 }

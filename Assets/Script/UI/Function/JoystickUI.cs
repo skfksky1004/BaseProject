@@ -14,7 +14,7 @@ public class JoystickUI : MonoBehaviour,IPointerDownHandler,IPointerUpHandler
 
     private void Awake()
     {
-        _radius = _imgPad.rectTransform.sizeDelta.x * 0.5f;
+        // _radius = _imgPad.rectTransform.sizeDelta.x * 0.5f;
     }
 
 

@@ -21,7 +21,7 @@ public class UICreater : ScriptableWizard
     private static UICreater _window;
     
     private static TreeViewState _TreeViewState;
-    private static TreeView_Simple _treeViewSimple;
+    private static TreeView_Simple _treeView;
     private static SearchField _SearchField;
     
     private static string _savePath_PrefabKey = "SaveKeyPrefabs";
@@ -64,14 +64,8 @@ public class UICreater : ScriptableWizard
             if (_SearchField == null)
                 _SearchField = new SearchField();
                 
-            _treeViewSimple = new TreeView_Simple(_TreeViewState);
-            _SearchField.downOrUpArrowKeyPressed += _treeViewSimple.SetFocusAndEnsureSelectedItem;
-            
-            TreeView_Simple.AddTreeViewItem("name1", 1);
-            TreeView_Simple.AddTreeViewItem("name2", 1);
-            TreeView_Simple.AddTreeViewItem("name3", 2);
-            TreeView_Simple.AddTreeViewItem("name4", 3);
-
+            _treeView = new TreeView_Simple(_TreeViewState);
+            _SearchField.downOrUpArrowKeyPressed += _treeView.SetFocusAndEnsureSelectedItem;
         }
 
     }
@@ -187,12 +181,24 @@ public class UICreater : ScriptableWizard
                 {
                     GUILayout.Space (100);
                     GUILayout.FlexibleSpace();
-                    _treeViewSimple.searchString = _SearchField.OnToolbarGUI (_treeViewSimple.searchString);
+                    _treeView.searchString = _SearchField.OnToolbarGUI (_treeView.searchString);
                 }
                 GUILayout.EndHorizontal();
                 
                 Rect rect = GUILayoutUtility.GetRect(200,400);
-                _treeViewSimple.OnGUI(rect);
+
+                var e = Event.current;
+                if (e.button == 1 && 
+                    e.type == EventType.MouseDown &&
+                    rect.Contains(e.mousePosition))
+                {
+                    _treeView.OnTreeView_Func();
+                    e.Use();
+                    
+                    _treeView.Reload();
+                }
+                
+                _treeView.OnGUI(rect);
             }
             GUILayout.EndVertical();
 
