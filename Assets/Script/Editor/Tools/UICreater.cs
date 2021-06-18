@@ -31,7 +31,7 @@ public class UICreater : ScriptableWizard
 
     private static eSaveType _saveType = eSaveType.Prefabs;
     private static float _widthMin = 800f;
-    private static float _heightMin = 400f;
+    private static float _heightMin = 800f;
 
     private static void EditorInit()
     {
@@ -85,10 +85,10 @@ public class UICreater : ScriptableWizard
         EditorInit();
 
         //  윈도우
-        // var window = GetWindow<UICreater>();
-        // window.minSize = new Vector2(_widthMin,_heightMin);
-        // window.title = "UICreater";
-        DisplayWizard<UICreater>("UICreater");
+        var window = GetWindow<UICreater>();
+        window.minSize = window.maxSize = new Vector2(_widthMin,_heightMin);
+        window.title = "UICreater";
+        // DisplayWizard<UICreater>("UICreater");
     }
 
     private void OnGUI()
@@ -217,11 +217,21 @@ public class UICreater : ScriptableWizard
     /// </summary>
     private static void VerticalView_4()
     {
+        var buttonSize = EditorHelper.GuiOption_height(30);
+
         GUILayout.BeginVertical();
         {
-            EditorGUILayout.LabelField("세로 4");
+            // EditorGUILayout.LabelField("세로 4");
+            //  버튼    
+            var isClick = GUILayout.Button("저장(프리팹)", EditorHelper.ButtonStyle, buttonSize);
+            if (isClick)
+            {
+                //  프리팹 저장
+            }
         }
         GUILayout.EndVertical();
+
+        EditorHelper.GuiLine(Color.gray);
     }
 
     /// <summary>
@@ -229,11 +239,21 @@ public class UICreater : ScriptableWizard
     /// </summary>
     private static void VerticalView_5()
     {
+        var buttonSize = EditorHelper.GuiOption_height(30);
+        
         GUILayout.BeginVertical();
         {
-            EditorGUILayout.LabelField("세로 5");
+            // EditorGUILayout.LabelField("세로 5");
+            //  버튼    
+            var isClick = GUILayout.Button("저장(프리팹And스크립트)", EditorHelper.ButtonStyle, buttonSize);
+            if (isClick)
+            {
+                //  프리팹과 스크립트 저장
+            }
         }
         GUILayout.EndVertical();
+
+        EditorHelper.GuiLine(Color.gray);
     }
 
     private static void OpenExplorer(eSaveType saveType)
