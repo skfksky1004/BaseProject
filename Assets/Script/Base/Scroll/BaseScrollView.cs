@@ -7,6 +7,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 다음 할일들
 ///
+/// TODO :: Bottom To Top 할경우 업데이트 아이템 생성이 꼬였음
 /// 
 /// </summary>
 
@@ -74,6 +75,56 @@ public class BaseScrollView : MonoBehaviour
         switch (ScrollType)
         {
             case eScrollType.Top_To_Bottom:
+                {
+                    ViewItemCount = Mathf.RoundToInt(scrollHeight / scrollItem.ItemSize.y) + 1;
+                    LineRow = Mathf.FloorToInt(scrollWidth / scrollPool.ItemPrefab.ItemSize.x);
+
+                    var contentWidth = LineRow * scrollPool.ItemPrefab.ItemSize.x;
+                    var contentHeight = LineRow <= 1
+                        ? scrollItem.ItemSize.y * CreateCount
+                        : scrollItem.ItemSize.y * ((CreateCount / LineRow) + ((CreateCount) % LineRow == 0 ? 0 : 1));
+
+                    maxPageNo = Mathf.RoundToInt(contentHeight / scrollPool.ItemPrefab.ItemSize.y) - ViewItemCount;
+                    //Debug.Log($"Line Count : {CreateCount / RowLine} /n Remain Count : {((CreateCount) % RowLine == 0 ? 0 : 1)}");
+
+                    //  크기
+                    var contentRect = scrollRect.content;
+                    contentRect.sizeDelta = new Vector2(contentWidth, contentHeight);
+                    scrollRect.content = contentRect;
+
+                    //  위치
+                    var moveCenterX = (scrollWidth - contentWidth) * 0.5f;
+                    var pos = scrollRect.content.localPosition;
+                    pos.x += moveCenterX;
+                    scrollRect.content.localPosition = pos;
+
+                    scrollRect.verticalNormalizedPosition = ScrollType == eScrollType.Top_To_Bottom ? 1 : 0;
+
+                    //  아이템 생성
+                    int index = 0;
+                    for (int i = 0; i <= ViewItemCount; i++)
+                    {
+                        for (int row = 0; row < LineRow; row++)
+                        {
+                            if (index >= CreateCount)
+                            {
+                                break;
+                            }
+
+                            var item = scrollPool.PopItem(scrollRect.content);
+                            RepositionItem(item, index++, ScrollType);
+                            item.SetActive(true);
+
+                            itemList.Add(item);
+                        }
+                    }
+
+                    //  초기 셋팅시 스크롤 페이지 번호 저장
+                    savePageNo = 0;
+
+                    break;
+                }
+
             case eScrollType.Bottom_To_Top:
                 {
                     ViewItemCount = Mathf.RoundToInt(scrollHeight / scrollItem.ItemSize.y) + 1;
@@ -120,9 +171,7 @@ public class BaseScrollView : MonoBehaviour
                     }
 
                     //  초기 셋팅시 스크롤 페이지 번호 저장
-                    savePageNo = ScrollType == eScrollType.Top_To_Bottom
-                        ? 0
-                        : maxPageNo - (ViewItemCount - LineRow) - 1;
+                    savePageNo = maxPageNo;
 
                     break;
                 }
@@ -175,7 +224,7 @@ public class BaseScrollView : MonoBehaviour
                     //  초기 셋팅시 스크롤 페이지 번호 저장
                     savePageNo = ScrollType == eScrollType.Left_To_Right
                         ? 0
-                        : maxPageNo - (ViewItemCount * LineColumn) - 1;
+                        : maxPageNo;
 
                     break;
                 }
@@ -218,11 +267,16 @@ public class BaseScrollView : MonoBehaviour
     {
         item.UpdateItem(index);
 
-        if (scrollType == eScrollType.Top_To_Bottom ||
-            scrollType == eScrollType.Bottom_To_Top)
+        if (scrollType == eScrollType.Top_To_Bottom)
         {
             var posX = index % LineRow * scrollItem.ItemSize.x;
             var posY = -(index / LineRow * scrollItem.ItemSize.y);
+            item.Rect.anchoredPosition = new Vector2(posX, posY);
+        }
+        else if (scrollType == eScrollType.Bottom_To_Top)
+        {
+            var posX = (index % LineRow) * scrollItem.ItemSize.x;
+            var posY = -scrollRect.content.sizeDelta.y + scrollItem.ItemSize.y + Mathf.Abs(index / LineRow * scrollItem.ItemSize.y);
             item.Rect.anchoredPosition = new Vector2(posX, posY);
         }
         else
@@ -243,13 +297,12 @@ public class BaseScrollView : MonoBehaviour
     {
         var contentPos = scrollRect.content.localPosition;
 
-        if (ScrollType == eScrollType.Top_To_Bottom ||
-            ScrollType == eScrollType.Bottom_To_Top)
+        if (ScrollType == eScrollType.Top_To_Bottom)
         {
             var pageNo = Mathf.RoundToInt((ScrollPos.y / scrollItem.ItemSize.y));
             var count = Mathf.Abs(pageNo - savePageNo);
 
-            //Debug.Log($"{pageNo} / {savePageNo}");
+            Debug.Log($"{pageNo} / {savePageNo}");
 
             if (pageNo > savePageNo && pageNo < maxPageNo)
             {
@@ -288,8 +341,8 @@ public class BaseScrollView : MonoBehaviour
                         }
                     }
 
-                    savePageNo = pageNo > CreateCount - ViewItemCount
-                        ? CreateCount - ViewItemCount
+                    savePageNo = pageNo > maxPageNo
+                        ? maxPageNo
                         : pageNo;
                 }
             }
@@ -335,7 +388,100 @@ public class BaseScrollView : MonoBehaviour
                         : pageNo;
                 }
             }
+        }
 
+        if (ScrollType == eScrollType.Bottom_To_Top)
+        {
+            var pageNo = Mathf.RoundToInt((ScrollPos.y / scrollItem.ItemSize.y));
+            var count = Mathf.Abs(pageNo - savePageNo);
+
+            Debug.Log($"{pageNo} / {savePageNo}");
+
+            if (pageNo < savePageNo && pageNo > 0)
+            {
+                var firstIndex = (int)itemList.FirstOrDefault()?.ItemIndex;
+                if (firstIndex >= 0)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        //  이전
+                        for (int line = 0; line < LineRow; line++)
+                        {
+                            var prevItem = itemList.FirstOrDefault();
+                            var CheckSize = Camera.main.WorldToScreenPoint(prevItem.transform.position);
+                            CheckSize.y += prevItem.ItemSize.y;
+                            if (RectTransformUtility.RectangleContainsScreenPoint((RectTransform)scrollRect.transform, CheckSize) == false)
+                            {
+                                scrollPool.PushItem(prevItem);
+                                itemList.RemoveAt(0);
+                            }
+                        }
+
+                        //  다음
+                        for (int line = 0; line < LineRow; line++)
+                        {
+                            if (firstIndex + ViewItemCount >= CreateCount)
+                            {
+                                break;
+                            }
+
+                            var nextItem = scrollPool.PopItem(scrollRect.content.transform);
+                            RepositionItem(nextItem, ++firstIndex + ViewItemCount, ScrollType);
+                            itemList.Add(nextItem);
+
+                            nextItem.gameObject.SetActive(true);
+                        }
+                    }
+
+                    savePageNo = pageNo > maxPageNo
+                        ? maxPageNo
+                        : pageNo;
+                }
+            }
+
+
+            if (pageNo > savePageNo && pageNo <= maxPageNo)
+            {
+                var lastIndex = (int)itemList.LastOrDefault()?.ItemIndex;
+                if (lastIndex >= 0)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        //  이전
+                        for (int line = 0; line < LineRow; line++)
+                        {
+                            var prevItem = itemList.LastOrDefault();
+                            var CheckSize = Camera.main.WorldToScreenPoint(prevItem.transform.position);
+                            CheckSize.y -= prevItem.ItemSize.y;
+                            if (RectTransformUtility.RectangleContainsScreenPoint(scrollRect.viewport, CheckSize) == false)
+                            {
+                                scrollPool.PushItem(prevItem);
+                                itemList.RemoveAt(itemList.Count - 1);
+                            }
+                        }
+
+                        //  다음
+                        for (int line = 0; line < LineRow; line++)
+                        {
+                            var nextIndex = lastIndex - ViewItemCount;
+                            if (nextIndex < 0)
+                            {
+                                break;
+                            }
+                            
+                            var nextItem = scrollPool.PopItem(scrollRect.content.transform);
+                            RepositionItem(nextItem, --lastIndex - ViewItemCount, ScrollType);
+                            itemList.Insert(0, nextItem);
+
+                            nextItem.gameObject.SetActive(true);
+                        }
+                    }
+
+                    savePageNo = pageNo < 0
+                        ? 0
+                        : pageNo;
+                }
+            }
         }
 
         if (ScrollType == eScrollType.Left_To_Right ||
@@ -389,8 +535,8 @@ public class BaseScrollView : MonoBehaviour
                         }
                     }
 
-                    savePageNo = pageNo > CreateCount - ViewItemCount
-                        ? CreateCount - ViewItemCount
+                    savePageNo = pageNo > maxPageNo
+                        ? maxPageNo
                         : pageNo;
                 }
             }

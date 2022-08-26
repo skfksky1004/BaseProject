@@ -12,7 +12,6 @@ public class BaseScrollItem : MonoBehaviour
 
     public Vector2 ItemSize => Rect.sizeDelta;
 
-
     public RectTransform Rect => (RectTransform)gameObject.transform;
 
     private void Awake()
